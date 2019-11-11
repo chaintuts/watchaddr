@@ -84,7 +84,7 @@ def main():
         for addr in auth.ADDRS:
             try:
                 bal = wa.get_balance(addr[0], addr[1])
-                wa.output_data(bal)
+                wa.output_data(addr[0] + ": " + str(bal))
             except OSError:
                 wa.output_data("Error fetching " + addr[0] + " balance")
     

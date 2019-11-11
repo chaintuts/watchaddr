@@ -42,3 +42,8 @@ ____________
 * Connect to your board using your preferred serial connection (like PuTTY) to enter the MicroPython REPL
 * Run import watchaddr
 * Run watchaddr.main()
+
+### Security note
+* The ESP8266 has a very small buffer for TLS connections, and the BlockCypher API overflows every time. 
+Therefore, this utility currently uses plain HTTP connections for fetching balance data.
+This can expose the addresses you're looking at to another party.
