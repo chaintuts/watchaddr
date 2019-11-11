@@ -40,7 +40,12 @@ ____________
 ### General usage
 * Update auth_sample.py to auth.py using your Wifi configuration and addresses
 * Configure your preferred display (OLED or serial back to your PC) in watchaddr.py
-* Push code to your microcontroller using the ampy tool: ampy --port <port> --baud 115200 put watchaddr.py (repeat with your auth.py)
+* Push code to your microcontroller using the ampy tool: `ampy --port <port> --baud 115200 put watchaddr.py` (repeat with your `auth.py`)
+
+### OLED display usage
+* When pushing code using ampy (as stated above) also put `main.py` - this script will import and run watchaddr on boot
+
+### Serial usage
 * Connect to your board using your preferred serial connection (like PuTTY) to enter the MicroPython REPL
 * Run import watchaddr
 * Run watchaddr.main()
