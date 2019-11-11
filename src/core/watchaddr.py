@@ -7,6 +7,8 @@ import auth
 import network
 import urequests
 import json
+import machine
+import ssd1306
 
 class WatchAddress:
 
@@ -27,6 +29,8 @@ class WatchAddress:
     def __init__(self, output=OUTPUT_DISPLAY):
 
         self.output = output
+        if self.output == self.OUTPUT_DISPLAY:
+            self.init_oled()
 
     # Connect to the wifi access point configured in auth.py
     def connect_wifi(self):
@@ -57,11 +61,23 @@ class WatchAddress:
 
         return bal
 
+    # Initialize the OLED screen for display
+    def init_oled(self):
+
+        i2c = machine.I2C(-1, machine.Pin(5), machine.Pin(4))
+        self.oled = ssd1306.SSD1306_I2C(128, 32, i2c)
+        self.oled_line = 0
+
     # Define a flexible display function
     # This can simply print to serial or output to a peripheral
     def output_data(self, data):
         if self.output == self.OUTPUT_DISPLAY:
-            pass
+            self.oled.text(data, 0, self.oled_line)
+            self.oled.show()
+            if self.oled_line == 30:
+                self.oled_line = 0
+            else:
+                self.oled_line = self.oled_line + 10
         else:
             print(data)
 
@@ -76,7 +92,7 @@ class WatchAddress:
 # This is the main entry point for the program
 def main():
 
-    wa = WatchAddress(output=WatchAddress.OUTPUT_SERIAL)
+    wa = WatchAddress()
     conn = wa.connect_wifi()
     if not conn:
         wa.output_data("Error connecting to wifi network")
