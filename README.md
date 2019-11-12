@@ -40,6 +40,7 @@ ____________
 ### General usage
 * Update auth_sample.py to auth.py using your Wifi configuration and addresses
 * Configure your preferred display (OLED or serial back to your PC) in watchaddr.py
+* Configure your preferred units in watchaddr.py (Base currency or USD)
 * Push code to your microcontroller using the ampy tool: `ampy --port <port> --baud 115200 put watchaddr.py` (repeat with your `auth.py`)
 
 ### OLED display usage
@@ -50,7 +51,6 @@ ____________
 * Run import watchaddr
 * Run watchaddr.main()
 
-### Security note
-* The ESP8266 has a very small buffer for TLS connections, and the BlockCypher API overflows every time. 
-Therefore, this utility currently uses plain HTTP connections for fetching balance data.
-This can expose the addresses you're looking at to another party.
+### Security
+* WatchAddr now uses TLS to connect to the self-hosted, minimalist API endpoint to get data that fits in the
+ESP8266's small TLS buffer
