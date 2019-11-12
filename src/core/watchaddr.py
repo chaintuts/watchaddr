@@ -6,31 +6,30 @@
 import auth
 import network
 import urequests
-import json
 import machine
 import ssd1306
 
 class WatchAddress:
 
-    # Define API endpoints
-    API_ENDPOINTS = {
-                        # Currency : ( API base url, raw balance key, decimal places )
-                        "BCH" : ( "http://rest.bitcoin.com/v2/address/details/", "balanceSat", 8 ),
-                        "BTC" : ( "http://api.blockcypher.com/v1/btc/main/addrs/", "balance", 8 ),
-                        "LTC" : ( "http://api.blockcypher.com/v1/ltc/main/addrs/", "balance", 8 ),
-                        "ETH" : ( "http://api.blockcypher.com/v1/eth/main/addrs/", "balance", 18 )
-                    }
+    # Define the base API endpoint
+    API_ENDPOINT = "https://jmcintyre.net/sites/watchaddr/watchaddr.py"
 
     # Supported output types
     OUTPUT_DISPLAY = 0
     OUTPUT_SERIAL = 1
 
+    # Supported units
+    UNITS_CURR = 0
+    UNITS_USD = 1
+
     # Initialize the WatchAddr instance
-    def __init__(self, output=OUTPUT_DISPLAY):
+    def __init__(self, output=OUTPUT_DISPLAY, units=UNITS_CURR):
 
         self.output = output
         if self.output == self.OUTPUT_DISPLAY:
             self.init_oled()
+
+        self.units = units
 
     # Connect to the wifi access point configured in auth.py
     def connect_wifi(self):
@@ -42,24 +41,19 @@ class WatchAddress:
 
         return conn.active()
 
-    # Fetch the address balance information from the API endpoint
-    def fetch_raw(self, currency, address):
+    # Fetch the address balance inVformation from the API endpoint
+    def get_balance(self, currency, address):
 
-        url_base = self.API_ENDPOINTS[currency][0]
-        url_full = url_base + address
+        url_full = self.API_ENDPOINT + "/" + address + "/" + currency
         ret = urequests.get(url_full)
         
-        raw = json.loads(ret.text)
-        return raw
+        raw = ret.text
+        bal, usd = raw.split(",")
 
-    # Get the balance in the smallest unit (Satoshi, etc.),
-    # convert to base currency, and return
-    def fetch_balance(self, currency, raw):
-
-        bal_small = raw[self.API_ENDPOINTS[currency][1]]
-        bal = bal_small / (10 ** self.API_ENDPOINTS[currency][2])
-
-        return bal
+        if self.units == self.UNITS_USD:
+            return "$" + usd
+        else:
+            return bal
 
     # Initialize the OLED screen for display
     def init_oled(self):
@@ -81,26 +75,18 @@ class WatchAddress:
         else:
             print(data)
 
-    # Wrapper to fetch a desired currency balance
-    def get_balance(self, currency, address):
-        
-        raw = self.fetch_raw(currency, address)
-        bal = self.fetch_balance(currency, raw)
-
-        return bal
-
 # This is the main entry point for the program
 def main():
 
-    wa = WatchAddress()
+    wa = WatchAddress(units=WatchAddress.UNITS_USD)
     conn = wa.connect_wifi()
     if not conn:
-        wa.output_data("Error connecting to wifi network")
+        wa.output_data("Err: wifi conn")
     else:
         for addr in auth.ADDRS:
             try:
                 bal = wa.get_balance(addr[0], addr[1])
                 wa.output_data(addr[0] + ": " + str(bal))
             except OSError:
-                wa.output_data("Error fetching " + addr[0] + " balance")
+                wa.output_data("Err: bal fetch")
     
