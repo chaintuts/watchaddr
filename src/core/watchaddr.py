@@ -19,6 +19,10 @@ class WatchAddress:
     OUTPUT_DISPLAY = 0
     OUTPUT_SERIAL = 1
 
+    # Supported balance types
+    BAL_INDIVIDUAL = 0
+    BAL_TOTAL = 1
+
     # Supported units
     UNITS_CURR = 0
     UNITS_USD = 1
@@ -27,13 +31,14 @@ class WatchAddress:
     POLLING_INTERVAL = 30
 
     # Initialize the WatchAddr instance
-    def __init__(self, output=OUTPUT_DISPLAY, units=UNITS_CURR, polling_interval=POLLING_INTERVAL):
+    def __init__(self, output=OUTPUT_DISPLAY, units=UNITS_CURR, polling_interval=POLLING_INTERVAL, bal=BAL_INDIVIDUAL):
 
         self.output = output
         if self.output == self.OUTPUT_DISPLAY:
             self.init_oled()
 
         self.units = units
+        self.bal = bal
         self.polling_interval = polling_interval
 
     # Connect to the wifi access point configured in auth.py
@@ -96,19 +101,30 @@ class WatchAddress:
 
         while True:
             self.output_clear()
-            for addr in auth.ADDRS:
-                try:
-                    bal = self.get_balance(addr[0], addr[1])
-                    self.output_data(addr[0] + ": " + str(bal))
-                except OSError:
-                    self.output_data("Err: bal fetch")
+            if self.bal == self.BAL_INDIVIDUAL:
+                for addr in auth.ADDRS:
+                    try:
+                        bal = self.get_balance(addr[0], addr[1])
+                        self.output_data(addr[0] + ": " + str(bal))
+                    except OSError:
+                        self.output_data("Err: bal fetch")
+            else:
+                total = 0.0
+                for addr in auth.ADDRS:
+                    try:
+                        bal = self.get_balance(addr[0], addr[1])
+                        total = total + float(bal[1:])
+                    except OSError:
+                        self.output_data("Err: bal fetch")
+                self.output_data("Total USD:")
+                self.output_data("$" + str(total))
             time.sleep(self.polling_interval)
 
 
 # This is the main entry point for the program
 def main():
 
-    wa = WatchAddress(units=WatchAddress.UNITS_USD)
+    wa = WatchAddress(units=WatchAddress.UNITS_USD, bal=WatchAddress.BAL_TOTAL)
     conn = wa.connect_wifi()
     if not conn:
         wa.output_data("Err: wifi conn")
