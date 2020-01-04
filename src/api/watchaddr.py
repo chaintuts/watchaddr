@@ -51,8 +51,6 @@ class address_info:
 		if not currency:
 			response = "Please specify an address"
 			return response
-		
-		# Fetch the data in multiple threads to reduce IO latency
 		data = {}
 		t_bal = threading.Thread(target=self.fetch_bal, args=(address, currency.upper(), data))
 		t_price = threading.Thread(target=self.fetch_price, args=(address, currency.upper(), data))
@@ -75,7 +73,7 @@ class address_info:
 		# First, fetch the balance in the base currency	
 		url_base = API_ENDPOINTS[currency][0]
 		url_full = url_base + address
-		ret = requests.get(url_full)
+		ret = requests.get(url_full, headers={ "User-Agent" : "Mozilla/5.0" })
         
 		raw = json.loads(ret.text)
 		bal_small = raw[API_ENDPOINTS[currency][1]]
@@ -87,7 +85,7 @@ class address_info:
 	def fetch_price(self, address, currency, data):
 
 		# Next, fetch the current USD price
-		ret = requests.get(API_ENDPOINTS[currency][3])
+		ret = requests.get(API_ENDPOINTS[currency][3], headers={ "User-Agent" : "Mozilla/5.0" })
 		raw = json.loads(ret.text)
 		price = float(raw["ticker"]["price"])
 
