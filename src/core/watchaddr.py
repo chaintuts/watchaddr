@@ -14,6 +14,10 @@ class WatchAddress:
 
     # Define the base API endpoint
     API_ENDPOINT = "https://jmcintyre.net/sites/watchaddr/watchaddr.py"
+    API_ENDPOINT = "https://jmcintyre.net/sites/watchaddr/watchaddr.py"
+    
+    # Define the name for an offline "cache mode" file
+    CACHE_FILE = "cache.txt"
 
     # Supported output types
     OUTPUT_DISPLAY = 0
@@ -83,6 +87,7 @@ class WatchAddress:
     # Define a flexible display function
     # This can simply print to serial or output to a peripheral
     def output_data(self, data):
+
         if self.output == self.OUTPUT_DISPLAY:
 
             self.oled.text(data, 0, self.oled_line)
@@ -101,11 +106,13 @@ class WatchAddress:
 
         while True:
             self.output_clear()
+            self.cache_clear()
             if self.bal == self.BAL_INDIVIDUAL:
                 for addr in auth.ADDRS:
                     try:
                         bal = self.get_balance(addr[0], addr[1])
                         self.output_data(addr[0] + ": " + str(bal))
+                        self.write_cache(addr[0] + ": " + str(bal))
                     except OSError:
                         self.output_data("Err: bal fetch")
             else:
@@ -118,15 +125,40 @@ class WatchAddress:
                         self.output_data("Err: bal fetch")
                 self.output_data("Total USD:")
                 self.output_data("$" + str(total))
+                self.write_cache("Total USD:")
+                self.write_cache("$" + str(total))
             time.sleep(self.polling_interval)
 
+    # Clear the cache file
+    def cache_clear(self):
+
+        open(self.CACHE_FILE, "w").close()
+    
+    # Write a line to the cache file
+    def write_cache(self, line):
+
+        with open(self.CACHE_FILE, "a") as f:
+            f.write(line + "\n")
+    
+    # Read from a cache file for offline mode
+    def read_cache(self):
+
+        with open(self.CACHE_FILE) as f:
+            for line in f:
+                self.output_data(line.strip().rstrip())
 
 # This is the main entry point for the program
 def main():
 
-    wa = WatchAddress(units=WatchAddress.UNITS_USD, bal=WatchAddress.BAL_TOTAL)
+    wa = WatchAddress(output=WatchAddress.OUTPUT_DISPLAY, units=WatchAddress.UNITS_CURR)
     conn = wa.connect_wifi()
     if not conn:
-        wa.output_data("Err: wifi conn")
+        wa.read_cache()
     else:
-        wa.poll_balance()
+        # First, check the ability to actually fetch data on the network
+        # If we can't connect, use the cache
+        try:
+            urequests.get(wa.API_ENDPOINT)
+            wa.poll_balance()
+        except OSError:
+            wa.read_cache()
